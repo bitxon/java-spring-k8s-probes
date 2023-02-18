@@ -1,0 +1,19 @@
+app.delayToBeHealth: 10
+
+management:
+  endpoints.web.exposure.include: '*'
+  endpoint:
+    health:
+      show-details: ALWAYS
+      group:
+        readiness:
+          include: startupWaiter, systemEnabler, ping
+        liveness:
+          include: startupWaiter, systemEnabler, diskSpace
+    shutdown:
+      enabled: true # Shutdown hook
+  health:
+    defaults:
+      enabled: true # Enable/Disable diskSpace, ping
+    probes:
+      enabled: true # probes on local env (by default they enable on k8s env only)

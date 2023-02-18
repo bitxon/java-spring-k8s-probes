@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: application-deployment
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: application
+  template:
+    metadata:
+      labels:
+        app: application
+    spec:
+      containers:
+        - name: application
+          image: bitxon/app-long-start
+          ports:
+            - containerPort: 8080
+          env:
+            - name: APP_DELAY_TO_BE_HEALTH
+              value: "20"
+          startupProbe:
+            initialDelaySeconds: 10 # 'initial check' will be after 10 seconds (Not counted as failure)
+            periodSeconds: 5        # first check will be after 10 + 5 = 15, second check 10 + 5 + 5 = 20
+            failureThreshold: 4     # last check will be after 10 + (5 * 4) = 30
+            httpGet:
+              path: /actuator/health
+              port: 8080
+          livenessProbe:
+            initialDelaySeconds: 0
+            periodSeconds: 10
+            failureThreshold: 2
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8080
+          readinessProbe:
+            initialDelaySeconds: 0
+            failureThreshold: 1
+            periodSeconds: 3
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: application-service
+spec:
+  type: LoadBalancer
+  selector:
+    app: application
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
